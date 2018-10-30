@@ -1,0 +1,31 @@
+#* This file should be replaced with a good go test
+@host = localhost:8000
+@json = application/json
+
+### GET ALL BOOKS
+
+GET http://{{host}}/api/books HTTP/1.1
+
+### GET ONE BOOK
+
+GET http://{{host}}/api/books/1 HTTP/1.1
+
+### POST A NEW BOOK
+
+POST http://{{host}}/api/books HTTP/1.1
+content-type: {{json}}
+
+{
+    "title": "The sacred bible",
+    "isbn": "891238781"
+}
+
+### UPDATE (PUT) A BOOK
+
+PUT http://{{host}}/api/books/3 HTTP/1.1
+Content-Type: {{json}}
+
+{
+    "title": "The Awnful Bible",
+    "isbn": "19881399128"
+}
