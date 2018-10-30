@@ -1,8 +1,6 @@
 package main
 
-import (
-	"time"
-)
+import "time"
 
 // Model based in gorm.Model (Model)
 type Model struct {
@@ -17,8 +15,7 @@ type Author struct {
 	Model
 	Firstname string // `json:"firstname"`
 	Lastname  string // `json:"lastname"`
-	Books     []Book
-	// DeletedAt *time.Time `json:",omitempty"`
+	Books     []Book `json:",omitempty"`
 }
 
 // Book Struct (Model)

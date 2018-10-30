@@ -26,11 +26,12 @@ func getBook(w http.ResponseWriter, r *http.Request) {
 	var book Book
 	db.Preload("Author").First(&book, params["id"])
 	if book.ID == 0 {
+		w.WriteHeader(404)
 		json.NewEncoder(w).Encode("NOT FOUND")
-		return
+	} else {
+		book.AuthorID = 0
+		json.NewEncoder(w).Encode(book)
 	}
-	book.AuthorID = 0
-	json.NewEncoder(w).Encode(book)
 }
 
 func createBook(w http.ResponseWriter, r *http.Request) {
@@ -43,17 +44,31 @@ func createBook(w http.ResponseWriter, r *http.Request) {
 
 func updateBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	var updates, base Book
+	var updates, book Book
 	_ = json.NewDecoder(r.Body).Decode(&updates)
 	id, _ := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
-	db.First(&base, id)
-	db.Model(&base).Updates(&updates)
-	json.NewEncoder(w).Encode(&base)
+	db.First(&book, id)
+	if book.ID == 0 {
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode("NOT FOUND")
+	} else {
+		db.Model(&book).Updates(&updates)
+		json.NewEncoder(w).Encode(&book)
+	}
 }
 
 func deleteBook(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(&[]Book{})
+	var book Book
+	id, _ := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
+	db.First(&book, id)
+	if book.ID == 0 {
+		w.WriteHeader(404)
+		json.NewEncoder(w).Encode("NOT FOUND")
+	} else {
+		db.Delete(&book)
+		json.NewEncoder(w).Encode(book)
+	}
 }
 
 func main() {
@@ -82,11 +97,10 @@ func main() {
 		Lastname:  "Perez Reverte",
 	})
 	db.Create(&Book{
-		Isbn:  "4413743",
-		Title: "Book Two",
+		Isbn:     "4413743",
+		Title:    "Book Two",
+		AuthorID: 2,
 	})
-
-	// ! Need to create authors inside books
 
 	r.HandleFunc("/api/books", getBooks).Methods("GET")
 	r.HandleFunc("/api/books/{id}", getBook).Methods("GET")
