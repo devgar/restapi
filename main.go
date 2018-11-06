@@ -5,24 +5,16 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/jinzhu/gorm"
-	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
-
-var db *gorm.DB
 
 func main() {
 	r := mux.NewRouter()
 
-	var err error
-	db, err = gorm.Open("sqlite3", "test.db")
+	err := initDB()
 	if err != nil {
 		panic("failed to connect database")
 	}
 	defer db.Close()
-
-	db.AutoMigrate(&Book{})
-	db.AutoMigrate(&Author{})
 
 	db.Create(&Book{
 		Isbn:  "4142312",

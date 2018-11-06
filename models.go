@@ -1,6 +1,13 @@
 package main
 
-import "time"
+import (
+	"os"
+	"time"
+
+	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/mysql"
+	_ "github.com/jinzhu/gorm/dialects/sqlite"
+)
 
 // Model based in gorm.Model (Model)
 type Model struct {
@@ -27,10 +34,21 @@ type Book struct {
 	AuthorID uint    `json:",omitempty"`
 }
 
-// DetailBook (Model) // * Ignores AuthorID
-type DetailBook struct {
-	Model
-	Isbn   string
-	Title  string
-	Author *Author `json:",omitempty"`
+var db *gorm.DB
+
+func initDB() error {
+	DATABASE := os.Getenv("DATABASE")
+	var err error
+	if DATABASE == "" {
+		db, err = gorm.Open("sqlite3", "/tmp/test.db")
+	} else {
+		// using gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
+		db, err = gorm.Open("mysql", DATABASE)
+	}
+	if err != nil {
+		return err
+	}
+	db.AutoMigrate(&Book{})
+	db.AutoMigrate(&Author{})
+	return nil
 }
