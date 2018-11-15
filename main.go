@@ -2,43 +2,40 @@ package main
 
 import (
 	"log"
-	"net/http"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
-func main() {
-	r := mux.NewRouter()
+func setupRouter() *gin.Engine {
+	r := gin.Default()
+	routesBooks(r.Group("/api/books"))
+	return r
+}
 
-	err := initDB()
-	if err != nil {
+func main() {
+
+	if err := initDB(); err != nil {
 		panic("failed to connect database")
 	}
-	defer db.Close()
 
-	db.Create(&Book{
-		Isbn:  "4142312",
-		Title: "Book One",
-		Author: &Author{
-			Firstname: "John",
-			Lastname:  "Doe",
-		},
-	})
-	db.Create(&Author{
-		Firstname: "Arturo",
-		Lastname:  "Perez Reverte",
-	})
-	db.Create(&Book{
-		Isbn:     "4413743",
-		Title:    "Book Two",
-		AuthorID: 2,
-	})
+	// db.Create(&Book{
+	// 	Isbn:  "4142312",
+	// 	Title: "Book One",
+	// 	Author: &Author{
+	// 		Firstname: "John",
+	// 		Lastname:  "Doe",
+	// 	},
+	// })
+	// db.Create(&Book{
+	// 	Isbn:   "4413743",
+	// 	Title:  "Book Two",
+	//	Author: &Author{
+	//		Firstname: "Arturo",
+	//		Lastname:  "Perez",
+	//	},
+	// })
 
-	r.HandleFunc("/api/books", routeBooksGet).Methods("GET")
-	r.HandleFunc("/api/books/{id}", routeBooksGetOne).Methods("GET")
-	r.HandleFunc("/api/books", routeBooksPost).Methods("POST")
-	r.HandleFunc("/api/books/{id}", routeBooksPut).Methods("PUT")
-	r.HandleFunc("/api/books/{id}", routeBooksDelete).Methods("DELETE")
+	log.Fatal(setupRouter().Run(":8000"))
 
-	log.Fatal(http.ListenAndServe(":8000", r))
+	db.Close()
 }
