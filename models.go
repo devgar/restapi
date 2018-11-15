@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"os"
+	"path"
 	"time"
 
 	"github.com/jinzhu/gorm"
@@ -36,11 +38,15 @@ type Book struct {
 
 var db *gorm.DB
 
+func scopedPath() string {
+	return path.Join("/tmp", fmt.Sprintf("%d_%s", time.Now().Unix(), "test.db"))
+}
+
 func initDB() error {
 	DATABASE := os.Getenv("DATABASE")
 	var err error
 	if DATABASE == "" {
-		db, err = gorm.Open("sqlite3", "/tmp/test.db")
+		db, err = gorm.Open("sqlite3", scopedPath())
 	} else {
 		// using gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
 		db, err = gorm.Open("mysql", DATABASE)
@@ -48,7 +54,6 @@ func initDB() error {
 	if err != nil {
 		return err
 	}
-	db.AutoMigrate(&Book{})
-	db.AutoMigrate(&Author{})
+	db.AutoMigrate(&Book{}, &Author{})
 	return nil
 }
