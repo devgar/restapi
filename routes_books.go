@@ -1,67 +1,71 @@
 package main
 
 import (
-	"encoding/json"
 	"net/http"
-	"strconv"
 
-	"github.com/gorilla/mux"
+	"github.com/gin-gonic/gin"
 )
 
-func routeBooksGet(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func routeBooksGet(c *gin.Context) {
 	var books []Book
 	db.Find(&books)
-	json.NewEncoder(w).Encode(books)
+	c.JSON(200, books)
 }
 
-func routeBooksGetOne(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	params := mux.Vars(r)
+func routeBooksGetOne(c *gin.Context) {
+	id := c.Param("id")
 	var book Book
-	db.Preload("Author").First(&book, params["id"])
+	db.Preload("Author").First(&book, id)
 	if book.ID == 0 {
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode("NOT FOUND")
+		c.JSON(404, "Book not found")
 	} else {
 		book.AuthorID = 0
-		json.NewEncoder(w).Encode(book)
+		c.JSON(200, book)
 	}
 }
 
-func routeBooksPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func routeBooksPost(c *gin.Context) {
 	var book Book
-	_ = json.NewDecoder(r.Body).Decode(&book)
+	if err := c.ShouldBindJSON(&book); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	db.Create(&book)
-	json.NewEncoder(w).Encode(book)
+	c.JSON(200, book)
 }
 
-func routeBooksPut(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var updates, book Book
-	_ = json.NewDecoder(r.Body).Decode(&updates)
-	id, _ := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
+func routeBooksPut(c *gin.Context) {
+	id := c.Param("id")
+	var changes, book Book
+	if err := c.ShouldBindJSON(&changes); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
 	db.First(&book, id)
 	if book.ID == 0 {
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode("NOT FOUND")
+		c.JSON(404, "Book not found")
 	} else {
-		db.Model(&book).Updates(&updates)
-		json.NewEncoder(w).Encode(&book)
+		db.Model(&book).Updates(&changes)
+		c.JSON(200, book)
 	}
 }
 
-func routeBooksDelete(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+func routeBooksDelete(c *gin.Context) {
+	id := c.Param("id")
 	var book Book
-	id, _ := strconv.ParseUint(mux.Vars(r)["id"], 10, 64)
 	db.First(&book, id)
 	if book.ID == 0 {
-		w.WriteHeader(404)
-		json.NewEncoder(w).Encode("NOT FOUND")
+		c.JSON(404, "Book not found")
 	} else {
 		db.Delete(&book)
-		json.NewEncoder(w).Encode(book)
+		c.JSON(200, book)
 	}
+}
+
+func routesBooks(r *gin.RouterGroup) {
+	r.GET("", routeBooksGet)
+	r.GET("/:id", routeBooksGetOne)
+	r.POST("", routeBooksPost)
+	r.PUT("/:id", routeBooksPut)
+	r.DELETE("/:id", routeBooksDelete)
 }
