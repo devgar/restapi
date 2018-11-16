@@ -10,11 +10,31 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestCreateBookWithNonExistingAuthor(t *testing.T) {
+	if err := initDB(); err != nil {
+		panic("failed to connect database")
+	}
+
+	db.LogMode(true)
+
+	defer db.Close()
+
+	err := db.Create(&Book{
+		Title:    "Test to fail",
+		Isbn:     "123456789-ABCD",
+		AuthorID: 99,
+	}).Error
+
+	assert.NotNil(t, err)
+}
+
 func TestPingRoute(t *testing.T) {
 
 	if err := initDB(); err != nil {
 		panic("failed to connect database")
 	}
+
+	defer db.Close()
 
 	router := setupRouter()
 
@@ -39,5 +59,14 @@ func TestPingRoute(t *testing.T) {
 	assert.Equal(t, 200, w.Code)
 	assert.NotEqual(t, "[]", w.Body.String())
 
-	db.Close()
+	req, _ = http.NewRequest("GET", "/api/books", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
+	assert.NotEqual(t, "[]", w.Body.String())
+
+	req, _ = http.NewRequest("GET", "/api/books/1", nil)
+	router.ServeHTTP(w, req)
+
+	assert.Equal(t, 200, w.Code)
 }
