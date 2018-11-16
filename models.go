@@ -33,7 +33,7 @@ type Book struct {
 	Isbn     string  // `json:"isbn"`
 	Title    string  // `json:"title"`
 	Author   *Author `json:",omitempty"`
-	AuthorID uint    `json:",omitempty"`
+	AuthorID uint    `json:",omitempty" sql:"type:integer REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE"`
 }
 
 var db *gorm.DB
@@ -47,6 +47,7 @@ func initDB() error {
 	var err error
 	if DATABASE == "" {
 		db, err = gorm.Open("sqlite3", scopedPath())
+		db.Exec("PRAGMA foreign_keys = ON;")
 	} else {
 		// using gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
 		db, err = gorm.Open("mysql", DATABASE)
