@@ -30,7 +30,10 @@ func routeBooksPost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	db.Create(&book)
+	if err := db.Create(&book).Error; err != nil {
+		c.JSON(http.StatusNotAcceptable, gin.H{"error": err.Error()})
+		return
+	}
 	c.JSON(200, book)
 }
 
@@ -44,10 +47,14 @@ func routeBooksPut(c *gin.Context) {
 	db.First(&book, id)
 	if book.ID == 0 {
 		c.JSON(404, "Book not found")
-	} else {
-		db.Model(&book).Updates(&changes)
-		c.JSON(200, book)
+		return
 	}
+	if err := db.Model(&book).Updates(&changes).Error; err != nil {
+		c.JSON(http.StatusNotAcceptable, gin.H{"error": err.Error()})
+		return
+	}
+	c.JSON(200, book)
+
 }
 
 func routeBooksDelete(c *gin.Context) {
