@@ -36,17 +36,27 @@ type Book struct {
 	AuthorID uint    `json:",omitempty" sql:"type:integer REFERENCES authors(id) ON DELETE CASCADE ON UPDATE CASCADE"`
 }
 
+// User Struct (Model)
+type User struct {
+	Model
+	Token string
+}
+
 var db *gorm.DB
 
-func scopedPath() string {
-	return path.Join("/tmp", fmt.Sprintf("%d_%s", time.Now().Unix(), "test.db"))
+func sqliteDBPath() string {
+	TMPDIR := os.Getenv("TMPDIR")
+	if TMPDIR == "" {
+		TMPDIR = "/tmp"
+	}
+	return path.Join(TMPDIR, fmt.Sprintf("%d_%s", time.Now().Unix(), "test.db"))
 }
 
 func initDB() error {
 	DATABASE := os.Getenv("DATABASE")
 	var err error
 	if DATABASE == "" {
-		db, err = gorm.Open("sqlite3", scopedPath())
+		db, err = gorm.Open("sqlite3", sqliteDBPath())
 		db.Exec("PRAGMA foreign_keys = ON;")
 	} else {
 		// using gorm.Open("mysql", "user:password@/dbname?charset=utf8&parseTime=True&loc=Local")
