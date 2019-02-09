@@ -39,7 +39,53 @@ type Book struct {
 // User Struct (Model)
 type User struct {
 	Model
-	Token string
+	Username  string
+	Email     string
+	Firstname string
+	Lastname  string
+	Token     string
+}
+
+// BlogDomain Struct (Model)
+type BlogDomain struct {
+	Model
+	Domain  string
+	Owner   *User
+	OwnerID uint `json:",omitempty" sql:"type:integer REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	Writers []User
+}
+
+// BlogPost Struct (Model)
+type BlogPost struct {
+	Model
+	BlogDomain      *BlogDomain
+	BlogDomainID    uint `json:",omitempty" sql:"type:integer REFERENCES blog_domains(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	PublicationDate *time.Time
+	Title           string
+	Body            string
+	BlogPostTags    []BlogPostTag
+	Author          *User `json:",omitempty"`
+	AuthorID        uint  `json:",omitempty" sql:"type:integer REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+}
+
+// BlogPostTag Struct (Model)
+type BlogPostTag struct {
+	Model
+	BlogDomain   *BlogDomain
+	BlogDomainID uint `json:",omitempty" sql:"type:integer REFERENCES blog_domains(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	Tag          string
+	BlogPosts    []BlogPost
+}
+
+// BlogPostCategory (Model)
+type BlogPostCategory struct {
+	Model
+	BlogDomain       *BlogDomain
+	BlogDomainID     uint `json:",omitempty" sql:"type:integer REFERENCES blog_domains(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	Category         string
+	BlogPosts        []BlogPost
+	ParentCategory   *BlogPostCategory `json:",omitempty"`
+	ParentCategoryID uint              `json:",omitempty" sql:"type:integer REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE"`
 }
 
 var db *gorm.DB
@@ -66,5 +112,6 @@ func initDB() error {
 		return err
 	}
 	db.AutoMigrate(&Book{}, &Author{})
+	db.AutoMigrate(&BlogDomain{}, &User{}, &BlogPost{}, &BlogPostCategory{}, &BlogPostTag{})
 	return nil
 }
