@@ -11,6 +11,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func unregistBookChannel(c chan Book) {
+	for i, v := range registeredBookChannels {
+		if v == c {
+			registeredBookChannels[i] = registeredBookChannels[len(registeredBookChannels)-1]
+			registeredBookChannels = registeredBookChannels[:len(registeredBookChannels)-1]
+			break
+		}
+	}
+}
+
 func routesStream(r *gin.RouterGroup) {
 	r.GET("/", func(c *gin.Context) {
 		c.Header("Content-Type", "text/event-stream")
@@ -82,6 +92,68 @@ func routesStream(r *gin.RouterGroup) {
 					return
 				}
 				id++
+			}
+		}
+	})
+
+	r.GET("/books", func(c *gin.Context) {
+		c.Header("Content-Type", "text/event-stream")
+		c.Header("Cache-Control", "no-cache")
+		c.Header("Connection", "keep-alive")
+		c.Header("X-Accel-Buffering", "no")
+
+		rw := c.Writer
+
+		flusher, ok := rw.(http.Flusher)
+		if !ok {
+			c.String(500, "Streaming not supported")
+			return
+		}
+
+		var ping = func() {
+			io.WriteString(rw, ": ping ")
+			io.WriteString(rw, strconv.FormatInt(time.Now().Unix(), 10))
+			io.WriteString(rw, "\n\n")
+			flusher.Flush()
+		}
+
+		ping()
+
+		eventc := make(chan Book)
+		registeredBookChannels = append(registeredBookChannels, eventc)
+
+		rc := c.Request.Context()
+		ctx, cancel := context.WithCancel(context.Background())
+
+		defer func() {
+			unregistBookChannel(eventc)
+			close(eventc)
+			cancel()
+		}()
+		pinger := time.NewTicker(30 * time.Second)
+
+		for {
+			select {
+			case <-rc.Done():
+				return
+			case <-c.Done():
+				return
+			case <-ctx.Done():
+				return
+			case <-pinger.C:
+				if c.IsAborted() {
+					c.Abort()
+					return
+				}
+				ping()
+			case book, ok := <-eventc:
+				if ok {
+					io.WriteString(rw, "book: "+book.Title)
+					io.WriteString(rw, "\n\n")
+					flusher.Flush()
+				} else {
+					return
+				}
 			}
 
 		}
