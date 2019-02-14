@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"math/rand"
 	"net/http"
@@ -12,7 +13,7 @@ import (
 )
 
 func routesStream(r *gin.RouterGroup) {
-	r.GET("/stream", func(c *gin.Context) {
+	r.GET("/", func(c *gin.Context) {
 		c.Header("Content-Type", "text/event-stream")
 		c.Header("Cache-Control", "no-cache")
 		c.Header("Connection", "keep-alive")
@@ -34,39 +35,56 @@ func routesStream(r *gin.RouterGroup) {
 
 		defer cancel()
 
-		go func() {
+		go func() { // goroutine
 			ticker := time.NewTicker(5 * time.Second)
+			ender := time.After(time.Minute)
 			defer close(eventc)
 			// defer resolve()
 			for {
 				select {
-				case <-time.After(5 * time.Minute):
+				case <-ender:
+					fmt.Println("|| -- Breaking -- ||")
 					return
 				case <-ticker.C:
 					eventc <- rand.Intn(100)
 				}
 			}
-
 		}()
 
 		id := 0
+		pinger := time.NewTicker(30 * time.Second)
 
 		for {
 			select {
-			case <-time.After(time.Hour):
+			case <-c.Done():
+				fmt.Println("|| -- (C) Context Done --||")
 				return
 			case <-ctx.Done():
+				fmt.Println("|| -- Context Done --||")
 				return
-			case <-time.After(time.Second * 30):
+			case <-pinger.C:
+				if c.IsAborted() {
+					fmt.Println("|| -- Aborted -- ||")
+					c.Abort()
+					return
+				}
 				io.WriteString(rw, ": ping\n\n")
 				flusher.Flush()
-			case buf, ok := <-eventc:
+			case data, ok := <-eventc:
+				if err := ctx.Err(); err != nil {
+					fmt.Println("|| -- ctx:Error -- ||")
+					return
+				}
 				if ok {
 					io.WriteString(rw, "id: "+strconv.Itoa(id))
 					io.WriteString(rw, "\n")
-					io.WriteString(rw, "data: "+strconv.Itoa(buf))
+					io.WriteString(rw, "data: "+strconv.Itoa(data))
 					io.WriteString(rw, "\n\n")
 					flusher.Flush()
+				} else {
+					fmt.Println("|| -- eventC CLOSED -- ||")
+					// c.Abort()
+					return
 				}
 				id++
 			}
