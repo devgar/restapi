@@ -6,8 +6,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var registeredBookChannels []chan Book
-
 func streamBook(book Book) {
 	go func(book Book) {
 		for _, c := range registeredBookChannels {
@@ -15,6 +13,7 @@ func streamBook(book Book) {
 		}
 	}(book)
 }
+
 func routeBooksGet(c *gin.Context) {
 	var books []Book
 	db.Find(&books)

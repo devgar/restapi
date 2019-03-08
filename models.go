@@ -11,6 +11,13 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
+// StreamData - Streaming Data Struct
+type StreamData struct {
+	Method string
+	Model  string
+	id     uint
+}
+
 // Model based in gorm.Model (Model)
 type Model struct {
 	ID        uint `gorm:"primary_key"`
@@ -66,6 +73,18 @@ type BlogPost struct {
 	BlogPostTags    []BlogPostTag
 	Author          *User `json:",omitempty"`
 	AuthorID        uint  `json:",omitempty" sql:"type:integer REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+}
+
+// BlogPostLang Struct (Model)
+type BlogPostLang struct {
+	Model
+	BlogPost        *BlogPost
+	BlogPostID      uint `json:",omitempty" sql:"type:integer REFERENCES blog_posts(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	BlogDomain      *BlogDomain
+	BlogDomainID    uint `json:",omitempty" sql:"type:integer REFERENCES blog_domains(id) ON DELETE SET NULL ON UPDATE CASCADE"`
+	PublicationDate *time.Time
+	Title           string
+	Blog            string
 }
 
 // BlogPostTag Struct (Model)

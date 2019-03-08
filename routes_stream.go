@@ -11,11 +11,25 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var registeredBookChannels []chan Book
+
 func unregistBookChannel(c chan Book) {
 	for i, v := range registeredBookChannels {
 		if v == c {
 			registeredBookChannels[i] = registeredBookChannels[len(registeredBookChannels)-1]
 			registeredBookChannels = registeredBookChannels[:len(registeredBookChannels)-1]
+			break
+		}
+	}
+}
+
+var domainChannels []chan StreamData
+
+func unregistDomainChannel(c chan StreamData) {
+	for i, v := range domainChannels {
+		if v == c {
+			domainChannels[i] = domainChannels[len(domainChannels)-1]
+			domainChannels = domainChannels[:len(domainChannels)-1]
 			break
 		}
 	}
@@ -148,7 +162,7 @@ func routesStream(r *gin.RouterGroup) {
 				ping()
 			case book, ok := <-eventc:
 				if ok {
-					io.WriteString(rw, "book: "+book.Title)
+					io.WriteString(rw, "POST book: "+strconv.Itoa(int(book.ID)))
 					io.WriteString(rw, "\n\n")
 					flusher.Flush()
 				} else {
