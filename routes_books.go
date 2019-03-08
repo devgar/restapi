@@ -6,6 +6,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func streamBook(book Book) {
+	go func(book Book) {
+		for _, c := range registeredBookChannels {
+			c <- book
+		}
+	}(book)
+}
+
 func routeBooksGet(c *gin.Context) {
 	var books []Book
 	db.Find(&books)
@@ -34,6 +42,7 @@ func routeBooksPost(c *gin.Context) {
 		c.JSON(http.StatusNotAcceptable, gin.H{"error": err.Error()})
 		return
 	}
+	streamBook(book)
 	c.JSON(200, book)
 }
 

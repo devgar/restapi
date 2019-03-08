@@ -10,6 +10,7 @@ func setupRouter() *gin.Engine {
 	r := gin.Default()
 	routesBooks(r.Group("/api/books"))
 	routesBlogPosts(r.Group("/api/blogposts"))
+	routesStream(r.Group("/api/stream"))
 	return r
 }
 
