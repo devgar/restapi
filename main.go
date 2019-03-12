@@ -1,26 +1,28 @@
 package main
 
 import (
-	"log"
+	"os"
 
+	"github.com/devgar/restapi/api"
+	"github.com/devgar/restapi/database"
+	"github.com/devgar/restapi/lib/middlewares"
 	"github.com/gin-gonic/gin"
 )
 
-func setupRouter() *gin.Engine {
-	r := gin.Default()
-	routesBooks(r.Group("/api/books"))
-	routesBlogPosts(r.Group("/api/blogposts"))
-	routesStream(r.Group("/api/stream"))
-	return r
-}
-
 func main() {
+	// load .env environment variables
+	// err := godotenv.Load()
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	if err := initDB(); err != nil {
-		panic("failed to connect database")
-	}
+	// initializes database
+	db, _ := database.Initialize()
 
-	log.Fatal(setupRouter().Run(":8000"))
-
-	db.Close()
+	port := os.Getenv("PORT")
+	app := gin.Default() // create gin app
+	app.Use(database.Inject(db))
+	app.Use(middlewares.JWTMiddleware())
+	api.ApplyRoutes(app) // apply api router
+	app.Run(":" + port)  // listen to given port
 }
